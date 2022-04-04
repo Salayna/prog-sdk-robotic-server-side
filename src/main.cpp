@@ -2,8 +2,8 @@
 #include "ESP8266WiFi.h"
  
  #define ORDER_SIZE 30
-const char* ssid = "ESGI";
-const char* password = "Reseau-GES";
+const char* ssid = "";
+const char* password = "";
 
 char order[ORDER_SIZE] = "";
 WiFiServer wifiServer(80);
