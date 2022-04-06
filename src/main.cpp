@@ -1,29 +1,90 @@
 #include <Arduino.h>
 #include "ESP8266WiFi.h"
 #include <ESP8266WebServer.h>
-#include <custom_client.h>
-#include <movement.h>
  
-const char* ssid = "ESGI";
-const char* password = "Reseau-GES";
+ //declare the functions below
+  void moveForward();
+  void moveBackward();
+  void turnLeft();
+  void turnRight();
+  void stopAll();
 
-WiFiServer wifiServer(3000);
-// Right Motor
-int RIGHT_BACK = 13;
-int RIGHT_FORW = 5;
+ /**
+  * 1 / 9 * value
+ */
 
+int LEFT_BACK = 5;
+int LEFT_FORW = 13;
 // Left Motor
-int LEFT_FORW = 14;
-int LEFT_BACK = 16;
+int RIGHT_FORW = 16;
+int RIGHT_BACK = 14;
 int enb = 12;
+char command_string[7];
+char* ssid = "ESGI";
+char* password = "Reseau-GES";
+char* server_address = "";
+ int server_port = 80;
 
 int DELAY = 5000;
 
-MovementHandler mov = MovementHandler(RIGHT_BACK, RIGHT_FORW, LEFT_FORW, LEFT_BACK, enb);
+
+WiFiServer wifiServer(3000);
+// Right Motor
+
 
 const int built_in_led =  LED_BUILTIN;
 const String html = "<a href=\"/move_forward\">Move forward</a><br/><a href=\"/move_backward\">Move backward</a><br/><a href=\"/turn_right\">Turn right</a><br/><a href=\"/turn_left\">Turn left</a>";
 
+//create a function to move forward
+void moveForward( int value )
+{
+    Serial.println("Moving Forward...");
+    analogWrite(RIGHT_FORW, 127);
+    analogWrite(LEFT_FORW, 127);
+    delay((3000/9)*value);
+    stopAll();
+}
+
+//create a function to move backward
+void moveBackward( int value)
+{
+    Serial.println("Moving Backward...");
+    Serial.println(value);
+    analogWrite(RIGHT_BACK, 127);
+    analogWrite(LEFT_BACK, 127);
+    delay((3000/9)*value);
+    stopAll();
+}
+
+//create a function to turn left
+void turnLeft(int value)
+{
+    Serial.println("Turning Left...");
+    analogWrite(RIGHT_FORW, 127);
+    analogWrite(LEFT_BACK, 0);
+    delay((3000/9)*value);
+    stopAll();
+}
+
+//create a function to turn right
+void turnRight(int value)
+{
+    Serial.println("Turning Right...");
+    analogWrite(RIGHT_BACK, 0);
+    analogWrite(LEFT_FORW, 127);
+    delay((3000/9)*value);
+    stopAll();
+}
+
+//create a function to stop all
+void stopAll()
+{
+    Serial.println("Stopping...");
+    analogWrite(RIGHT_FORW, 0);
+    analogWrite(RIGHT_BACK, 0);
+    analogWrite(LEFT_FORW, 0);
+    analogWrite(LEFT_BACK, 0);
+}
 
 void setup() {
 
@@ -57,43 +118,23 @@ void loop() {
   if (wifiServer.hasClient()) {
     WiFiClient client = wifiServer.available();
     if (client) {
-      String currentLine = "";
       while (client.connected()) {
         if (client.available()) {
-          char c = client.read();
-          Serial.write(c);
-          if (c == '\n') {
-            if (currentLine.length() == 0) {
-              client.print("HTTP/1.1 200 OK");
-              client.println("Content-Type: text/html");
-              client.println("Connection: close");
-              client.println();
-              client.println(html);
-            } else {
-              if (currentLine == "move_forward") {
-                mov.moveForward();
-                client.write("Moving Forward\n");
-              } else if (currentLine == "move_backward") {
-                mov.moveBackward();
-                client.write("Moving Backward\n");
-              } else if (currentLine == "turn_right") {
-                mov.turnRight();
-                client.write("Turning Right\n");
-              } else if (currentLine == "turn_left") {
-                mov.turnRight();
-                client.write("Turning Left\n");
-              } else if (currentLine == "stop") {
-                mov.stopAll();
-                client.write("Stopping\n");
-              }
+        for (int i = 0; i < 6; i++) {
+          command_string[i] = client.read();
+        }
+        if (command_string[0] == 'A') {
+          moveForward(command_string[4]-48);
+        } else if (command_string[0] == 'R') {
+          moveBackward(command_string[4]-48);
+        } else if (command_string[0] == 'D') {
+          turnLeft(command_string[4]-48);
+        } else if (command_string[0] == 'G') {
+          turnRight(command_string[4]-48);
+        }
             }
-            currentLine = "";
-          } else if (c != '\r') {
-            currentLine += c;
           }
         }
-      }
-      client.stop();
-    }
+        client.stop();
   }
 }
