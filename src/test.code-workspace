@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": "../../../../dev/sdk_robotic/quatre_avril"
+		},
+		{
+			"name": "test",
+			"path": ".."
+		}
+	],
+	"settings": {}
+}
